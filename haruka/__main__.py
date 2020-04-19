@@ -20,7 +20,7 @@ from haruka.modules.helper_funcs.misc import paginate_modules
 from haruka.modules.translations.strings import tld, tld_help 
 from haruka.modules.connection import connected
 
-PM_START = """Hey there! My name is {} - I'm here to help you manage your groups!
+PM_START = """Hey there! My name is Killer - I'm here to help you manage your groups!
 
 Click Help button to find out more about how to use me to my full potential.
 
