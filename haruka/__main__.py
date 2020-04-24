@@ -24,7 +24,7 @@ PM_START = """Hey there! My name is Killer - I'm here to help you manage your gr
 
 Click Help button to find out more about how to use me to my full potential.
 
-Join Killer Group [Killer Bot Support](https://t.me/Killer_Bot_Support) ( @Killer_Pro_Bot ) if you need any support or help.
+Join Killer Group [Killer Bot Support](https://t.me/Killer_Bot_Support)  if you need any support or help.
 
 Made with love by [pureindialover](http://t.me/pureindialover)
 
