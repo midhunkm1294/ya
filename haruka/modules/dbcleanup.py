@@ -7,7 +7,7 @@ from telegram.ext import CommandHandler, CallbackQueryHandler, run_async
 import haruka.modules.sql.antispam_sql as gban_sql
 import haruka.modules.sql.users_sql as user_sql
 from haruka import dispatcher, OWNER_ID
-from haruka.modules.helper_funcs.chat_status import dev_plus
+from haruka.modules.helper_funcs.chat_status import sudo_plus
 
 
 def get_invalid_chats(bot: Bot, update: Update, remove: bool = False):
