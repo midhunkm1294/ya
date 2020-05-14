@@ -80,7 +80,7 @@ def get_invalid_gban(bot: Bot, update: Update, remove: bool = False):
 
 
 @run_async
-@dev_plus
+@sudo_plus
 def dbcleanup(bot: Bot, update: Update):
     msg = update.effective_message
 
