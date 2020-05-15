@@ -63,6 +63,6 @@ __help__ = """
 
 __mod_name__ = 'COVID-19 STATS'
 
-COVID_HANDLER = CommandHandler("covid", covid, admin_ok=True)
+COVID_HANDLER = CommandHandler("covid", covid)
 
 dispatcher.add_handler(COVID_HANDLER)
