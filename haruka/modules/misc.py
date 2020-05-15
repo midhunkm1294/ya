@@ -522,52 +522,7 @@ def wiki(bot: Bot, update: Update):
         except BadRequest as et :
             update.effective_message.reply_text(f"⚠ Error: {et}")
             
-@run_async
-def get_time(bot: Bot, update: Update, args: List[str]):
-    if len(args) == 0:
-        update.effective_message.reply_text("Write a location to check the time.")
-        return
 
-    location = " ".join(args)
-    if location.lower() == bot.first_name.lower():
-        update.effective_message.reply_text("Its always banhammer time for me!")
-        bot.send_sticker(update.effective_chat.id, BAN_STICKER)
-        return
-
-    res = requests.get(GMAPS_LOC, params=dict(address=location))
-
-    if res.status_code == 200:
-        loc = json.loads(res.text)
-        if loc.get('status') == 'OK':
-            bot.sendChatAction(update.effective_chat.id, "typing") # Bot typing before send messages
-            lat = loc['results'][0]['geometry']['location']['lat']
-            long = loc['results'][0]['geometry']['location']['lng']
-
-            country = None
-            city = None
-
-            address_parts = loc['results'][0]['address_components']
-            for part in address_parts:
-                if 'country' in part['types']:
-                    country = part.get('long_name')
-                if 'administrative_area_level_1' in part['types'] and not city:
-                    city = part.get('long_name')
-                if 'locality' in part['types']:
-                    city = part.get('long_name')
-
-            if city and country:
-                location = "{}, {}".format(city, country)
-            elif country:
-                location = country
-
-            timenow = int(datetime.utcnow().timestamp())
-            res = requests.get(GMAPS_TIME, params=dict(location="{},{}".format(lat, long), timestamp=timenow))
-            if res.status_code == 200:
-                offset = json.loads(res.text)['dstOffset']
-                timestamp = json.loads(res.text)['rawOffset']
-                time_there = datetime.fromtimestamp(timenow + timestamp + offset).strftime("%H:%M:%S on %A %d %B")
-                update.message.reply_text("It's {} in {}".format(time_there, location))
-            
 @run_async
 def shrug(bot: Bot, update: Update):
     default_msg = "¯\_(ツ)_/¯"
@@ -614,13 +569,11 @@ __help__ = """
  - /exec <language> <code> [/stdin <stdin>]: Execute a code in a specified language. Send an empty command to get the supported languages.
  - /shrug: try and check it out yourself.
  - /bot: try and check it out yourself.
- - /time <place>: gives the local time at the given place.
 """
 
 __mod_name__ = "Misc"
 
 ID_HANDLER = DisableAbleCommandHandler("id", get_id, pass_args=True, admin_ok=True)
-TIME_HANDLER = CommandHandler("time", get_time, pass_args=True)
 PING_HANDLER = DisableAbleCommandHandler("ping", ping, admin_ok=True)
 #GOOGLE_HANDLER = DisableAbleCommandHandler("google", google)
 LYRICS_HANDLER = DisableAbleCommandHandler("lyrics", lyrics, pass_args=True, admin_ok=True)
@@ -649,7 +602,6 @@ PASTE_STATS_HANDLER = DisableAbleCommandHandler("pastestats", get_paste_stats, p
 
 
 dispatcher.add_handler(PASTE_HANDLER)
-dispatcher.add_handler(TIME_HANDLER)
 dispatcher.add_handler(GET_PASTE_HANDLER)
 dispatcher.add_handler(PASTE_STATS_HANDLER)
 dispatcher.add_handler(ID_HANDLER)
