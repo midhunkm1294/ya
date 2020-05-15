@@ -120,7 +120,8 @@ __help__ = """
  - /paste: Create a paste or a shortened url using [dogbin](https://del.dog)
  - /getpaste: Get the content of a paste or shortened url from [dogbin](https://del.dog)
  - /pastestats: Get stats of a paste or shortened url from [dogbin](https://del.dog)
-   thanks to @pureindialover for this wonderful pugin
+   
+ - thanks to @pureindialover for this wonderful pugin
 """
 
 __mod_name__ = "dogbin"
