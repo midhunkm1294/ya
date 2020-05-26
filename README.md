@@ -2,7 +2,7 @@
 
 ## Deploy
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/indianbhaiya/Killer)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?)
 
 A modular telegram Python bot running on python3 with an sqlalchemy database.
 
