@@ -1,12 +1,24 @@
-import re
-from io import BytesIO
-from time import sleep
-from typing import Optional
+#    Haruka Aya (A telegram bot project)
+#    Copyright (C) 2017-2019 Paul Larsen
+#    Copyright (C) 2019-2020 Akito Mizukito (Haruka Network Development)
 
-from typing import Optional, List
-from telegram import TelegramError, Chat, Message
-from telegram import Update, Bot
-from telegram import ParseMode
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import re
+from time import sleep
+from typing import List
+from telegram import TelegramError, Update, Bot, ParseMode
 from telegram.error import BadRequest
 from telegram.ext import MessageHandler, Filters, CommandHandler
 from telegram.ext.dispatcher import run_async
@@ -15,11 +27,12 @@ import haruka.modules.sql.users_sql as sql
 from haruka import dispatcher, OWNER_ID, LOGGER, SUDO_USERS, SUPPORT_USERS
 from telegram.utils.helpers import escape_markdown
 from haruka.modules.helper_funcs.filters import CustomFilters
-from haruka.modules.helper_funcs.chat_status import is_user_ban_protected, bot_admin
+from haruka.modules.helper_funcs.chat_status import bot_admin
 
-from haruka.modules.translations.strings import tld
+from haruka.modules.tr_engine.strings import tld
 
 USERS_GROUP = 4
+CHAT_GROUP = 10
 
 
 def get_user_id(username):
@@ -66,74 +79,29 @@ def broadcast(bot: Bot, update: Update):
                 sleep(0.1)
             except TelegramError:
                 failed += 1
-                LOGGER.warning("Couldn't send broadcast to %s, group name %s", str(chat.chat_id), str(chat.chat_name))
+                LOGGER.warning("Couldn't send broadcast to %s, group name %s",
+                               str(chat.chat_id), str(chat.chat_name))
 
-        update.effective_message.reply_text("Broadcast complete. {} groups failed to receive the message, probably "
-                                            "due to being kicked.".format(failed))
+        update.effective_message.reply_text(
+            "Broadcast complete. {} groups failed to receive the message, probably "
+            "due to being kicked.".format(failed))
 
 
 @run_async
 def log_user(bot: Bot, update: Update):
-    chat = update.effective_chat  # type: Optional[Chat]
-    msg = update.effective_message  # type: Optional[Message]
+    chat = update.effective_chat
+    msg = update.effective_message
 
-    sql.update_user(msg.from_user.id,
-                    msg.from_user.username,
-                    chat.id,
+    sql.update_user(msg.from_user.id, msg.from_user.username, chat.id,
                     chat.title)
 
     if msg.reply_to_message:
         sql.update_user(msg.reply_to_message.from_user.id,
-                        msg.reply_to_message.from_user.username,
-                        chat.id,
+                        msg.reply_to_message.from_user.username, chat.id,
                         chat.title)
 
     if msg.forward_from:
-        sql.update_user(msg.forward_from.id,
-                        msg.forward_from.username)
-
-
-@run_async
-def chats(bot: Bot, update: Update):
-    all_chats = sql.get_all_chats() or []
-    chatfile = 'List of chats.\n0. Chat name | Chat ID | Members count | Invitelink\n'
-    P = 1
-    for chat in all_chats:
-        try:
-            curr_chat = bot.getChat(chat.chat_id)
-            bot_member = curr_chat.get_member(bot.id)
-            chat_members = curr_chat.get_members_count(bot.id)
-            if bot_member.can_invite_users:
-                invitelink = bot.exportChatInviteLink(chat.chat_id)
-            else:
-                invitelink = "0"
-            chatfile += "{}. {} | {} | {} | {}\n".format(P, chat.chat_name, chat.chat_id, chat_members, invitelink)
-            P = P + 1
-        except:
-            pass
-
-    with BytesIO(str.encode(chatfile)) as output:
-        output.name = "chatlist.txt"
-        update.effective_message.reply_document(document=output, filename="chatlist.txt",
-                                                caption="Here is the list of chats in my database.")
-
-
-@run_async
-def banall(bot: Bot, update: Update, args: List[int]):
-    if args:
-        chat_id = str(args[0])
-        all_mems = sql.get_chat_members(chat_id)
-    else:
-        chat_id = str(update.effective_chat.id)
-        all_mems = sql.get_chat_members(chat_id)
-    for mems in all_mems:
-        try:
-            bot.kick_chat_member(chat_id, mems.user)
-            update.effective_message.reply_text("Tried banning " + str(mems.user))
-            sleep(0.1)
-        except BadRequest as excp:
-            update.effective_message.reply_text(excp.message + " " + str(mems.user))
-            continue
+        sql.update_user(msg.forward_from.id, msg.forward_from.username)
 
 
 @run_async
@@ -142,14 +110,17 @@ def snipe(bot: Bot, update: Update, args: List[str]):
         chat_id = str(args[0])
         del args[0]
     except TypeError as excp:
-        update.effective_message.reply_text("Please give me a chat to echo to!")
+        update.effective_message.reply_text(
+            "Please give me a chat to echo to!")
     to_send = " ".join(args)
     if len(to_send) >= 2:
         try:
             bot.sendMessage(int(chat_id), str(to_send))
         except TelegramError:
             LOGGER.warning("Couldn't send to group %s", str(chat_id))
-            update.effective_message.reply_text("Couldn't send the message. Perhaps I'm not part of that group?")
+            update.effective_message.reply_text(
+                "Couldn't send the message. Perhaps I'm not part of that group?"
+            )
 
 
 @run_async
@@ -169,11 +140,13 @@ def getlink(bot: Bot, update: Update, args: List[int]):
                 invitelink = bot.exportChatInviteLink(chat_id)
                 links += str(chat_id) + ":\n" + invitelink + "\n"
             else:
-                links += str(chat_id) + ":\nI don't have access to the invite link." + "\n"
+                links += str(
+                    chat_id
+                ) + ":\nI don't have access to the invite link." + "\n"
         except BadRequest as excp:
-                links += str(chat_id) + ":\n" + excp.message + "\n"
+            links += str(chat_id) + ":\n" + excp.message + "\n"
         except TelegramError as excp:
-                links += str(chat_id) + ":\n" + excp.message + "\n"
+            links += str(chat_id) + ":\n" + excp.message + "\n"
 
     message.reply_text(links)
 
@@ -183,17 +156,42 @@ def leavechat(bot: Bot, update: Update, args: List[int]):
     if args:
         chat_id = int(args[0])
     else:
-        update.effective_message.reply_text("You do not seem to be referring to a chat!")
+        try:
+            chat = update.effective_chat
+            if chat.type == "private":
+                update.effective_message.reply_text(
+                    "You do not seem to be referring to a chat!")
+                return
+            chat_id = chat.id
+            reply_text = "`I'll leave this group`"
+            bot.send_message(chat_id,
+                             reply_text,
+                             parse_mode='Markdown',
+                             disable_web_page_preview=True)
+            bot.leaveChat(chat_id)
+        except BadRequest as excp:
+            if excp.message == "Chat not found":
+                update.effective_message.reply_text(
+                    "It looks like I've been kicked out of the group :p")
+            else:
+                return
+
     try:
         chat = bot.getChat(chat_id)
         titlechat = bot.get_chat(chat_id).title
-        bot.sendMessage(chat_id, "`I'll Go Away!`")
+        reply_text = "`I'll Go Away!`"
+        bot.send_message(chat_id,
+                         reply_text,
+                         parse_mode='Markdown',
+                         disable_web_page_preview=True)
         bot.leaveChat(chat_id)
-        update.effective_message.reply_text("I'll left group {}".format(titlechat))
+        update.effective_message.reply_text(
+            "I'll left group {}".format(titlechat))
 
     except BadRequest as excp:
         if excp.message == "Chat not found":
-            update.effective_message.reply_text("It looks like I've been kicked out of the group :p")
+            update.effective_message.reply_text(
+                "It looks like I've been kicked out of the group :p")
         else:
             return
 
@@ -206,7 +204,8 @@ def slist(bot: Bot, update: Update):
     for user_id in SUDO_USERS:
         try:
             user = bot.get_chat(user_id)
-            name = "[{}](tg://user?id={})".format(user.first_name + (user.last_name or ""), user.id)
+            name = "[{}](tg://user?id={})".format(
+                user.first_name + (user.last_name or ""), user.id)
             if user.username:
                 name = escape_markdown("@" + user.username)
             text1 += "\n - `{}`".format(name)
@@ -216,26 +215,36 @@ def slist(bot: Bot, update: Update):
     for user_id in SUPPORT_USERS:
         try:
             user = bot.get_chat(user_id)
-            name = "[{}](tg://user?id={})".format(user.first_name + (user.last_name or ""), user.id)
+            name = "[{}](tg://user?id={})".format(
+                user.first_name + (user.last_name or ""), user.id)
             if user.username:
                 name = escape_markdown("@" + user.username)
             text2 += "\n - `{}`".format(name)
         except BadRequest as excp:
             if excp.message == 'Chat not found':
                 text2 += "\n - ({}) - not found".format(user_id)
-    message.reply_text(text1 + "\n" + text2 + "\n", parse_mode=ParseMode.MARKDOWN)
+    message.reply_text(text1 + "\n" + text2 + "\n",
+                       parse_mode=ParseMode.MARKDOWN)
     #message.reply_text(text2 + "\n", parse_mode=ParseMode.MARKDOWN)
+
+
+@run_async
+def chat_checker(bot: Bot, update: Update):
+    if update.effective_message.chat.get_member(
+            bot.id).can_send_messages == False:
+        bot.leaveChat(update.effective_message.chat.id)
 
 
 def __user_info__(user_id, chat_id):
     if user_id == dispatcher.bot.id:
-        return tld(chat_id, "I've seen them in... Wow. Are they stalking me? They're in all the same places I am... oh. It's me.")
+        return tld(chat_id, "users_seen_is_bot")
     num_chats = sql.get_user_num_chats(user_id)
-    return tld(chat_id, "I've seen them in <code>{}</code> chats in total.").format(num_chats)
+    return tld(chat_id, "users_seen").format(num_chats)
 
 
 def __stats__():
-    return "{} users, across {} chats".format(sql.num_users(), sql.num_chats())
+    return "• `{}` users, across `{}` chats".format(sql.num_users(),
+                                                    sql.num_chats())
 
 
 def __gdpr__(user_id):
@@ -246,26 +255,33 @@ def __migrate__(old_chat_id, new_chat_id):
     sql.migrate_chat(old_chat_id, new_chat_id)
 
 
-__help__ = ""  # no help string
-
-__mod_name__ = "Users"
-
-BROADCAST_HANDLER = CommandHandler("broadcasts", broadcast, filters=Filters.user(OWNER_ID))
+BROADCAST_HANDLER = CommandHandler("broadcasts",
+                                   broadcast,
+                                   filters=Filters.user(OWNER_ID))
 USER_HANDLER = MessageHandler(Filters.all & Filters.group, log_user)
-CHATLIST_HANDLER = CommandHandler("chatlist", chats, filters=Filters.user(OWNER_ID))
-SNIPE_HANDLER = CommandHandler("snipe", snipe, pass_args=True, filters=Filters.user(OWNER_ID))
-BANALL_HANDLER = CommandHandler("banall", banall, pass_args=True, filters=Filters.user(OWNER_ID))
-GETLINK_HANDLER = CommandHandler("getlink", getlink, pass_args=True, filters=Filters.user(OWNER_ID))
-LEAVECHAT_HANDLER = CommandHandler("leavechat", leavechat, pass_args=True, filters=Filters.user(OWNER_ID))
-SLIST_HANDLER = CommandHandler("slist", slist,
-                           filters=CustomFilters.sudo_filter | CustomFilters.support_filter)
+SNIPE_HANDLER = CommandHandler("snipe",
+                               snipe,
+                               pass_args=True,
+                               filters=Filters.user(OWNER_ID))
+GETLINK_HANDLER = CommandHandler("getlink",
+                                 getlink,
+                                 pass_args=True,
+                                 filters=Filters.user(OWNER_ID))
+LEAVECHAT_HANDLER = CommandHandler("leavechat",
+                                   leavechat,
+                                   pass_args=True,
+                                   filters=Filters.user(OWNER_ID))
+SLIST_HANDLER = CommandHandler("slist",
+                               slist,
+                               filters=CustomFilters.sudo_filter
+                               | CustomFilters.support_filter)
+CHAT_CHECKER_HANDLER = MessageHandler(Filters.all & Filters.group,
+                                      chat_checker)
 
 dispatcher.add_handler(SNIPE_HANDLER)
-dispatcher.add_handler(BANALL_HANDLER)
 dispatcher.add_handler(GETLINK_HANDLER)
 dispatcher.add_handler(LEAVECHAT_HANDLER)
 dispatcher.add_handler(SLIST_HANDLER)
 dispatcher.add_handler(USER_HANDLER, USERS_GROUP)
 dispatcher.add_handler(BROADCAST_HANDLER)
-dispatcher.add_handler(CHATLIST_HANDLER)
-
+dispatcher.add_handler(CHAT_CHECKER_HANDLER, CHAT_GROUP)
